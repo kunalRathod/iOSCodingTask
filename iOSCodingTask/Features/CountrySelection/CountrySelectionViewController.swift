@@ -30,6 +30,8 @@ final class CountrySelectionViewController: UIViewController{
     
     private lazy var destinationButton: UIButton = makeCountryButton( title: "Select Country")
     
+    var onDestinationSelected: ((Country) -> Void)?
+    
     init(viewModel: CountrySelectionViewModel){
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
@@ -160,6 +162,8 @@ final class CountrySelectionViewController: UIViewController{
         viewModel.selectDestination(country)
         
         destinationButton.configuration?.title = "\(country.flag.emoji) \(country.names.common)"
+        
+        onDestinationSelected?(country)
     }
     
     private func showError(_ error: Error) {
@@ -183,4 +187,5 @@ final class CountrySelectionViewController: UIViewController{
 
         return "\(country.flag.emoji) \(country.names.common)"
     }
+    
 }

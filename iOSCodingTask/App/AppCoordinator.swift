@@ -16,6 +16,7 @@ final class AppCoordinator {
         self.navigationController = navigationController
     }
     
+    
     func start() {
         
         guard let apiKey = Bundle.main.object(
@@ -25,13 +26,32 @@ final class AppCoordinator {
             fatalError("REST Countries API key is missing")
         }
         
+        
         let service = CountriesService(apiKey: apiKey)
         let viewModel = CountrySelectionViewModel(service:service)
         let viewController = CountrySelectionViewController(viewModel: viewModel)
-        viewController.view.backgroundColor = .systemBackground
-        viewController.title = "Vacation Destination"
+        
+        viewController.onDestinationSelected = { [weak self] country in
+            self?.showCountryDetail(country)
+        }
+        
         
         navigationController.setViewControllers([viewController], animated: false)
+    }
+    
+    private func showCountryDetail(_ country: Country) {
+        let viewModel = CountryDetailViewModel(
+            country: country
+        )
+
+        let viewController = CountryDetailViewController(
+            viewModel: viewModel
+        )
+
+        navigationController.pushViewController(
+            viewController,
+            animated: true
+        )
     }
 }
 
