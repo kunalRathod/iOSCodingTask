@@ -1,0 +1,5 @@
+iOSCodingTask/Resources/Secrets.xcconfig
+**/xcuserdata/
+**/*.xcuserdatad/Resources/Secrets.xcconfig
+xcuserdata/
+*.xcuserdatad
