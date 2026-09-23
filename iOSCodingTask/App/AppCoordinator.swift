@@ -18,7 +18,15 @@ final class AppCoordinator {
     
     func start() {
         
-        let viewModel = CountrySelectionViewModel()
+        guard let apiKey = Bundle.main.object(
+            forInfoDictionaryKey: "REST_COUNTRIES_API_KEY"
+        ) as? String,
+              !apiKey.isEmpty else {
+            fatalError("REST Countries API key is missing")
+        }
+        
+        let service = CountriesService(apiKey: apiKey)
+        let viewModel = CountrySelectionViewModel(service:service)
         let viewController = CountrySelectionViewController(viewModel: viewModel)
         viewController.view.backgroundColor = .systemBackground
         viewController.title = "Vacation Destination"
