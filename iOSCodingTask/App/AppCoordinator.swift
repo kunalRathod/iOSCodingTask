@@ -5,7 +5,6 @@
 //  Created by Kunal Rathod on 2026-09-22.
 //
 
-import Foundation
 import UIKit
 
 final class AppCoordinator {
@@ -19,19 +18,13 @@ final class AppCoordinator {
     
     func start() {
         
-        guard let apiKey = Bundle.main.object(
-            forInfoDictionaryKey: "REST_COUNTRIES_API_KEY"
-        ) as? String,
-              !apiKey.isEmpty else {
-            fatalError("REST Countries API key is missing")
-        }
-        
-        
-        let service = CountriesService(apiKey: apiKey)
+        let service = CountriesService(
+            apiKey: AppConfiguration.restCountriesAPIKey
+        )
         let viewModel = CountrySelectionViewModel(service:service)
         let viewController = CountrySelectionViewController(viewModel: viewModel)
         
-        viewController.onDestinationSelected = { [weak self] country in
+        viewController.onCountrySelected = { [weak self] country in
             self?.showCountryDetail(country)
         }
         

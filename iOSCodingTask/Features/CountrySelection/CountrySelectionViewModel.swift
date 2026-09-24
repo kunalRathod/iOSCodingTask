@@ -13,8 +13,6 @@ final class CountrySelectionViewModel{
     private let service: CountriesServiceProtocol
     
     private(set) var countries: [Country] = []
-    private(set) var selectedOriginCountry: Country?
-    private(set) var selectedDestinationCountry: Country?
     
     init(service: CountriesServiceProtocol) {
         self.service = service
@@ -27,22 +25,5 @@ final class CountrySelectionViewModel{
             }
     }
     
-    func selectOrigin(_ country: Country) {
-        selectedOriginCountry = country
-        
-        if selectedDestinationCountry == country {
-            selectedDestinationCountry = nil
-        }
-    }
-    
-    func selectDestination(_ country: Country) {
-        selectedDestinationCountry = country
-    }
-    
-    var availableDestinationCountries: [Country] {
-        countries.filter {
-            $0 != selectedOriginCountry
-        }
-    }
 }
 

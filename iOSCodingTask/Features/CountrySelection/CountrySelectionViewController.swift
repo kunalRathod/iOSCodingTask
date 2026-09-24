@@ -8,184 +8,161 @@
 import Foundation
 import UIKit
 
-final class CountrySelectionViewController: UIViewController{
-    
+final class CountrySelectionViewController: UIViewController {
+
     private let viewModel: CountrySelectionViewModel
-    
-    private let countryOriginLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Origin Country"
-        label.font = .preferredFont(forTextStyle: .headline)
-        return label
-    }()
-    
-    private let countryDestinationLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Destination Country"
-        label.font = .preferredFont(forTextStyle: .headline)
-        return label
-    }()
-    
-    private lazy var originButton: UIButton = makeCountryButton( title: "Select Country")
-    
-    private lazy var destinationButton: UIButton = makeCountryButton( title: "Select Country")
-    
-    var onDestinationSelected: ((Country) -> Void)?
-    
-    init(viewModel: CountrySelectionViewModel){
+
+    var onCountrySelected: ((Country) -> Void)?
+
+    private let tableView = UITableView(
+        frame: .zero,
+        style: .insetGrouped
+    )
+
+    private let activityIndicator = UIActivityIndicatorView(
+        style: .large
+    )
+
+    init(viewModel: CountrySelectionViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Select Country"
+
+        title = "Countries"
         view.backgroundColor = .systemBackground
-        
-        configureLayout()
+
+        configureTableView()
+        configureActivityIndicator()
         loadCountries()
     }
-    
+
+    private func configureTableView() {
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.isHidden = true
+
+        view.addSubview(tableView)
+
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor
+            ),
+            tableView.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor
+            ),
+            tableView.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor
+            ),
+            tableView.bottomAnchor.constraint(
+                equalTo: view.bottomAnchor
+            )
+        ])
+    }
+
+    private func configureActivityIndicator() {
+        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(activityIndicator)
+
+        NSLayoutConstraint.activate([
+            activityIndicator.centerXAnchor.constraint(
+                equalTo: view.centerXAnchor
+            ),
+            activityIndicator.centerYAnchor.constraint(
+                equalTo: view.centerYAnchor
+            )
+        ])
+    }
+
     private func loadCountries() {
+        activityIndicator.startAnimating()
+
         Task {
             do {
                 try await viewModel.loadCountries()
 
-                print("Loaded \(viewModel.countries.count) countries")
-
-                configureMenus()
-
-                originButton.isEnabled = true
-                destinationButton.isEnabled = false
+                activityIndicator.stopAnimating()
+                tableView.isHidden = false
+                tableView.reloadData()
             } catch {
-                print("Failed to load countries:", error)
-                showError(error)
+                activityIndicator.stopAnimating()
+                showError()
             }
         }
     }
-    
-    private func makeCountryButton(title: String) -> UIButton {
-        var configuration = UIButton.Configuration.tinted()
-        configuration.title = title
-        configuration.image = UIImage(systemName: "chevron.down")
-        configuration.imagePlacement = .trailing
-        configuration.imagePadding = 8
-        
-        let button = UIButton(configuration: configuration)
-        
-        button.contentHorizontalAlignment = .fill
-        button.showsMenuAsPrimaryAction = true
-        
-        return button
-    }
-    
-    private func configureLayout() {
-        let stackView = UIStackView(
-            arrangedSubviews: [
-                countryOriginLabel,
-                originButton,
-                countryDestinationLabel,
-                destinationButton
-            ]
-        )
-        
-        stackView.axis = .vertical
-        stackView.spacing = 12
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        view.addSubview(stackView)
-        
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.topAnchor,
-                constant: 32
-            ),
-            stackView.leadingAnchor.constraint(
-                equalTo: view.leadingAnchor,
-                constant: 24
-            ),
-            stackView.trailingAnchor.constraint(
-                equalTo: view.trailingAnchor,
-                constant: -24
-            ),
-            
-            originButton.heightAnchor.constraint(equalToConstant: 50),
-            destinationButton.heightAnchor.constraint(equalToConstant: 50)
-        ])
-    }
-    
-    private func configureMenus() {
-        originButton.menu = makeOriginMenu()
-        destinationButton.menu = makeDestinationMenu()
-    }
-    
-    private func makeOriginMenu() -> UIMenu {
-        let actions = viewModel.countries.map { country in
-            UIAction(title: displayName(for: country)) { [weak self] _ in
-                self?.selectOrigin(country)
-            }
-        }
 
-        return UIMenu(children: actions)
-    }
-    
-    private func makeDestinationMenu() -> UIMenu {
-            let actions = viewModel.availableDestinationCountries.map { country in
-                UIAction(title: displayName(for: country)) { [weak self] _ in
-                    self?.selectDestination(country)
-                }
-            }
-
-            return UIMenu(children: actions)
-        }
-    
-    private func selectOrigin(_ country: Country) {
-        viewModel.selectOrigin(country)
-        
-        originButton.configuration?.title = "\(country.flag.emoji) \(country.names.common)"
-        print("Selected:", country.names.common)
-        print("Emoji: [\(country.flag.emoji)]")
-        
-        if viewModel.selectedDestinationCountry == nil {
-            destinationButton.configuration?.title = "Select country"
-        }
-        
-        destinationButton.menu = makeDestinationMenu()
-        destinationButton.isEnabled = true
-    }
-    
-    private func selectDestination(_ country: Country) {
-        viewModel.selectDestination(country)
-        
-        destinationButton.configuration?.title = "\(country.flag.emoji) \(country.names.common)"
-        
-        onDestinationSelected?(country)
-    }
-    
-    private func showError(_ error: Error) {
+    private func showError() {
         let alert = UIAlertController(
             title: "Unable to Load Countries",
             message: "Please try again.",
             preferredStyle: .alert
         )
-        
+
         alert.addAction(
             UIAlertAction(title: "OK", style: .default)
         )
-        
+
         present(alert, animated: true)
     }
-    
+
     private func displayName(for country: Country) -> String {
-        if country.flag.emoji.isEmpty {
+        guard !country.flag.emoji.isEmpty else {
             return country.names.common
         }
 
         return "\(country.flag.emoji) \(country.names.common)"
     }
-    
+}
+
+extension CountrySelectionViewController: UITableViewDataSource {
+
+    func tableView(
+        _ tableView: UITableView,
+        numberOfRowsInSection section: Int
+    ) -> Int {
+        viewModel.countries.count
+    }
+
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+
+        let cell = UITableViewCell(
+            style: .default,
+            reuseIdentifier: nil
+        )
+
+        let country = viewModel.countries[indexPath.row]
+
+        cell.textLabel?.text = displayName(for: country)
+        cell.accessoryType = .disclosureIndicator
+
+        return cell
+    }
+}
+
+extension CountrySelectionViewController: UITableViewDelegate {
+
+    func tableView(
+        _ tableView: UITableView,
+        didSelectRowAt indexPath: IndexPath
+    ) {
+        tableView.deselectRow(
+            at: indexPath,
+            animated: true
+        )
+
+        let country = viewModel.countries[indexPath.row]
+
+        onCountrySelected?(country)
+    }
 }

@@ -49,8 +49,6 @@ final class CountriesService: CountriesServiceProtocol {
                 throw URLError(.badServerResponse)
             }
             
-            print("Status code:", httpResponse.statusCode)
-            
             let decodedResponse = try JSONDecoder().decode(
                 CountriesResponse.self,
                 from: data
